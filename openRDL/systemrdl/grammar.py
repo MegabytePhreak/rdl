@@ -84,9 +84,14 @@ def field_def(rule):
     rule.astAttrs = {'name': ID, 'body': field_body}
 
 
-def field_inst(rule):
-    rule.add_option(([_or('internal', 'external')], ID, ID, [_or(array, array_range)]))
-    rule.astAttrs = {'type': {'type': ID, 'single': True}, 'name': {'type': ID, 'single': True}, }
+def anonymous_field_inst(rule):
+    rule.add_option(('field', field_body, ID, [_or(array, array_range)], ['=', sized_numeric], ';'))
+    rule.astAttrs = {'body': field_body, 'name': ID, 'array': [array, array_range], 'reset': sized_numeric}
 
 
-grammar = Grammar(start=enum_def, tokens=[SYMBOL, ID], ignore=[WHITE, NEWLINE], ast_tokens=[VNUMBER, NUMBER])
+def component_inst(rule):
+    rule.add_option(([_or('internal', 'external')], ID, ID, [_or(array, array_range)], ';'))
+    rule.astAttrs = {'type': {'type': ID, 'single': True}, 'name': {'type': ID, 'single': True}}
+
+
+grammar = Grammar(start=anonymous_field_inst, tokens=all_tokens, ignore=[WHITE, NEWLINE], ast_tokens=[VNUMBER, NUMBER])

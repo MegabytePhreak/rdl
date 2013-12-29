@@ -30,3 +30,4 @@ class DEREF(StringToken):
     strings = ['->']
 
 
+all_tokens = [ SYMBOL, ACCESSTYPE, ADDRESSTYPE, PRECEDENCE, TF, ID, VNUMBER, NUMBER, DEREF ]
