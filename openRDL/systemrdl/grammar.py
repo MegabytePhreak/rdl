@@ -75,12 +75,12 @@ def dynamic_prop_assign(rule):
 
 
 def field_body(rule):
-    rule.add_option(('{', star(prop_assign, default_prop_assign, dynamic_prop_assign, enum_def), '}'))
+    rule.add_option(('{', star(_or(prop_assign,  default_prop_assign, dynamic_prop_assign, enum_def)), '}'))
     rule.astAttrs = {'contents': [prop_assign, default_prop_assign, dynamic_prop_assign, enum_def]}
 
 
 def field_def(rule):
-    rule.add_option(("field", ID, field_body, ';'))
+    rule.add_option(("field", ID, field_body, ['=', sized_numeric], ';'))
     rule.astAttrs = {'name': ID, 'body': field_body}
 
 
@@ -90,8 +90,25 @@ def anonymous_field_inst(rule):
 
 
 def component_inst(rule):
-    rule.add_option(([_or('internal', 'external')], ID, ID, [_or(array, array_range)], ';'))
+    rule.add_option(([_or('internal', 'external')], ['alias', ID], ID, ID, [_or(array, array_range)], ';'))
     rule.astAttrs = {'type': {'type': ID, 'single': True}, 'name': {'type': ID, 'single': True}}
 
 
-grammar = Grammar(start=anonymous_field_inst, tokens=all_tokens, ignore=[WHITE, NEWLINE], ast_tokens=[VNUMBER, NUMBER])
+def component_body(rule):
+    rule.add_option(('{', star(_or(prop_assign, default_prop_assign, dynamic_prop_assign, enum_def,
+                                  field_def, component_inst, anonymous_field_inst, component_def)), '}'))
+
+
+def component_def(rule):
+    rule.add_option((ID, ID, component_body, ';'))
+
+
+def anonymous_component_inst(rule):
+    rule.add_option(([_or('internal', 'external')], ID, component_body, ID, [_or(array, array_range)], ';'))
+
+
+def root(rule):
+    rule.add_option((star(_or(enum_def, component_inst, anonymous_component_inst, component_def,
+                              default_prop_assign, prop_assign, dynamic_prop_assign)),))
+
+grammar = Grammar(start=root, tokens=all_tokens, ignore=[WHITE, NEWLINE], ast_tokens=[VNUMBER, NUMBER])

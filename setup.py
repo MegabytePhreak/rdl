@@ -9,4 +9,5 @@ setup(name='openRDL',
       author_email='roukemap@gmail.com',
       url='',
       packages=['openRDL', 'openRDL.systemrdl'],
+      requires=['codetalker']
      )
