@@ -62,8 +62,8 @@ def enum_def(rule):
 
 
 def prop_assign(rule):
-    rule.add_option((ID, ['=', value], ';'))
-    rule.astAttrs = {'name': ID, 'value': [value]}
+    rule.add_option((_or(PRECEDENCE,ID), ['=', value], ';'))
+    rule.astAttrs = {'name': [PRECEDENCE,ID], 'value': [value]}
 
 
 def default_prop_assign(rule):
@@ -77,7 +77,7 @@ def dynamic_prop_assign(rule):
 
 
 def inst_mod(rule):
-    rule.add_option(([_or(array, array_range)], _or(['=', sized_numeric], [ALLOC, unsized_numeric])))
+    rule.add_option(([_or(array, array_range)],star(_or(('=', sized_numeric), (ALLOC, unsized_numeric)))))
     rule.astAttrs = {'array': [array, array_range], 'reset': [sized_numeric],
                      'alloc_mode': [ALLOC], 'alloc': [unsized_numeric]}
 
