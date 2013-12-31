@@ -18,11 +18,13 @@ def unsized_numeric(rule):
 
 def sized_numeric(rule):
     rule.add_option(('0',))
+    rule.add_option(('0x0',))
     rule.add_option(VNUMBER)
     rule.pass_single = True
 
 
 def value(rule):
+    rule.add_option(MLSTRING)
     rule.add_option(STRING)
     rule.add_option(TF)
     rule.add_option(sized_numeric)
@@ -45,8 +47,8 @@ def array_range(rule):
 
 
 def enum_prop(rule):
-    rule.add_option((_or('name', 'desc'), '=', STRING, ';'))
-    rule.astAttrs = {'name': ID, 'value': STRING}
+    rule.add_option((_or('name', 'desc'), '=', _or(STRING, MLSTRING), ';'))
+    rule.astAttrs = {'name': ID, 'value': [STRING, MLSTRING]}
 
 
 def enum_item(rule):
@@ -74,29 +76,15 @@ def dynamic_prop_assign(rule):
     rule.astAttrs = {'instance': instance_ref, 'assign': prop_assign}
 
 
-def field_body(rule):
-    rule.add_option(('{', star(_or(prop_assign,  default_prop_assign, dynamic_prop_assign, enum_def)), '}'))
-    rule.astAttrs = {'contents': [prop_assign, default_prop_assign, dynamic_prop_assign, enum_def]}
-
-
-def field_def(rule):
-    rule.add_option(("field", ID, field_body, ['=', sized_numeric], ';'))
-    rule.astAttrs = {'name': ID, 'body': field_body}
-
-
-def anonymous_field_inst(rule):
-    rule.add_option(('field', field_body, ID, [_or(array, array_range)], ['=', sized_numeric], ';'))
-    rule.astAttrs = {'body': field_body, 'name': ID, 'array': [array, array_range], 'reset': sized_numeric}
-
-
-def component_inst(rule):
-    rule.add_option(([_or('internal', 'external')], ['alias', ID], ID, ID, [_or(array, array_range)], ';'))
-    rule.astAttrs = {'type': {'type': ID, 'single': True}, 'name': {'type': ID, 'single': True}}
+def inst_mod(rule):
+    rule.add_option(([_or(array, array_range)], _or(['=', sized_numeric], [ALLOC, unsized_numeric])))
+    rule.astAttrs = {'array': [array, array_range], 'reset': [sized_numeric],
+                     'alloc_mode': [ALLOC], 'alloc': [unsized_numeric]}
 
 
 def component_body(rule):
     rule.add_option(('{', star(_or(prop_assign, default_prop_assign, dynamic_prop_assign, enum_def,
-                                  field_def, component_inst, anonymous_field_inst, component_def)), '}'))
+                                   anonymous_component_inst, component_inst, component_def)), '}'))
 
 
 def component_def(rule):
@@ -104,11 +92,17 @@ def component_def(rule):
 
 
 def anonymous_component_inst(rule):
-    rule.add_option(([_or('internal', 'external')], ID, component_body, ID, [_or(array, array_range)], ';'))
+    rule.add_option(([INTEXT], ID, component_body, ID, inst_mod, ';'))
+
+
+def component_inst(rule):
+    rule.add_option(([INTEXT], ['alias', ID], ID, ID, inst_mod, ';'))
+    rule.astAttrs = {'type': {'type': ID, 'single': True}, 'name': {'type': ID, 'single': True}}
 
 
 def root(rule):
     rule.add_option((star(_or(enum_def, component_inst, anonymous_component_inst, component_def,
                               default_prop_assign, prop_assign, dynamic_prop_assign)),))
 
-grammar = Grammar(start=root, tokens=all_tokens, ignore=[WHITE, NEWLINE], ast_tokens=[VNUMBER, NUMBER])
+grammar = Grammar(start=root, tokens=all_tokens, ignore=[WHITE, NEWLINE, CCOMMENT, CMCOMMENT],
+                  ast_tokens=[VNUMBER, NUMBER, MLSTRING, HEX, INTEXT, ALLOC])
