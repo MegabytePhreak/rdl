@@ -1,6 +1,6 @@
 __author__ = 'megabytephreak'
 
-import openRDL.systemrdl.grammar as grammar
+import rdlcompiler.systemrdl.grammar as grammar
 from codetalker import testing
 import os
 

@@ -2,12 +2,12 @@
 
 from distutils.core import setup
 
-setup(name='openRDL',
+setup(name='rdlcompiler',
       version='0.1',
       description='',
       author='Paul Roukema',
       author_email='roukemap@gmail.com',
       url='',
-      packages=['openRDL', 'openRDL.systemrdl'],
-      requires=['codetalker']
+      packages=['rdlcompiler', 'rdlcompiler.systemrdl'],
+      requires=['codetalker', 'enum34']
      )

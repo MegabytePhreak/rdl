@@ -85,6 +85,8 @@ def inst_mod(rule):
 def component_body(rule):
     rule.add_option(('{', star(_or(prop_assign, default_prop_assign, dynamic_prop_assign, enum_def,
                                    anonymous_component_inst, component_inst, component_def)), '}'))
+    rule.astAttrs = {'items': [prop_assign, default_prop_assign, dynamic_prop_assign, enum_def,
+                               anonymous_component_inst, component_inst, component_def]}
 
 
 def component_def(rule):
