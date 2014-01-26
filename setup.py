@@ -9,5 +9,5 @@ setup(name='rdlcompiler',
       author_email='roukemap@gmail.com',
       url='',
       packages=['rdlcompiler', 'rdlcompiler.systemrdl'],
-      requires=['codetalker', 'enum34']
+      requires=[ 'enum34']
      )
