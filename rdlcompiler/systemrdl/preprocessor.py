@@ -73,8 +73,8 @@ def preprocess(filenames, mode=preprocess_mode.AUTO):
         mode = required_preprocessors(filenames)
 
     if mode != preprocess_mode.NONE and not perl_available():
-        raise Exception('A perl installation is required in order to perform preprocessing, '
-                        'but the configured perl executable "%s" was not found' % cfg().get('preprocesssor','perl'))
+        raise Exception("A perl installation is required in order to perform preprocessing, "
+                        "but the configured perl executable '%s' was not found" % cfg().get('preprocessor', 'perl'))
     try:
         tempname = None
         if mode == preprocess_mode.PERL_ONLY or mode == preprocess_mode.BOTH:

@@ -10,13 +10,17 @@ import argparse
 import os
 from systemrdl.preprocessor import preprocess_mode, preprocess
 import re
+import sys
 
+if sys.platform.startswith('win'):
+    SYSTEM_CONFIG_PATH = os.path.expandvars(r'%PROGRAMDATA%\rdlcompiler\rdlcompiler.conf')
+    USER_CONFIG_PATH = os.path.expandvars(r'%LOCALAPPDATA%\rdlcompiler\rdlcompiler.conf')
+else:
+    SYSTEM_CONFIG_PATH = '/etc/rdlcompiler.conf'
+    USER_CONFIG_PATH = os.path.expanduser('~/.rdlcompiler.conf')
 
-SYSTEM_CONFIG_PATH = '/etc/rdlcompiler.conf'
-USER_CONFIG_PATH = '~/.rdlcompiler.cfg'
 
 _config = None
-
 
 
 def init_config():
@@ -94,7 +98,7 @@ def main():
     if args.load_system_config:
         cfg().read(SYSTEM_CONFIG_PATH)
     if args.load_user_config:
-        cfg().read(os.path.expanduser(USER_CONFIG_PATH))
+        cfg().read(USER_CONFIG_PATH)
 
     for f in args.config_files:
         cfg().readfp(f, f.name)
@@ -103,6 +107,8 @@ def main():
         cfg().set(override[0], override[1], override[2])
 
     print args
+
+    print cfg()._sections
 
     contents = preprocess(args.inputs, preprocessor_mode_map[args.preprocessor])
 
