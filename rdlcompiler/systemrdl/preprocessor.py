@@ -3,7 +3,7 @@ __author__ = 'megabytephreak'
 import os
 import tempfile
 import re
-from rdlcompiler import cfg
+from rdlcompiler.config import Config
 import subprocess
 from enum import Enum
 
@@ -18,7 +18,7 @@ class preprocess_mode(Enum):
 def perl_available():
     try:
         with open(os.devnull) as fnull:
-            subprocess.check_call([cfg().get('preprocessor', 'perl'), '--version'],
+            subprocess.check_call([Config.cfg().get('preprocessor', 'perl'), '--version'],
                                   stdout=fnull, stderr=fnull)
         return True
     except OSError:
@@ -41,7 +41,7 @@ def required_preprocessors(filenames):
 
 def perl_preprocess(filenames, output_path):
     try:
-        subprocess.call([cfg().get('preprocessor', 'perl'), cfg().get('preprocessor', 'perlpp')]
+        subprocess.call([Config.cfg().get('preprocessor', 'perl'), Config.cfg().get('preprocessor', 'perlpp')]
                         + filenames + ['--output', output_path])
         return output_path
     except (OSError, subprocess.CalledProcessError) as ex:
@@ -50,7 +50,7 @@ def perl_preprocess(filenames, output_path):
 
 def verilog_preprocess(filenames):
     try:
-        return subprocess.check_output([cfg().get('preprocessor', 'perl'), cfg().get('preprocessor', 'vppreproc'), '--mlstring'] +
+        return subprocess.check_output([Config.cfg().get('preprocessor', 'perl'), Config.cfg().get('preprocessor', 'vppreproc'), '--mlstring'] +
                                        filenames)
     except (OSError, subprocess.CalledProcessError) as ex:
         raise Exception('Unable to launch verilog preprocessor: %s' % ex)
@@ -74,7 +74,8 @@ def preprocess(filenames, mode=preprocess_mode.AUTO):
 
     if mode != preprocess_mode.NONE and not perl_available():
         raise Exception("A perl installation is required in order to perform preprocessing, "
-                        "but the configured perl executable '%s' was not found" % cfg().get('preprocessor', 'perl'))
+                        "but the configured perl executable '%s' was not found" %
+                        Config.cfg().get('preprocessor', 'perl'))
     try:
         tempname = None
         if mode == preprocess_mode.PERL_ONLY or mode == preprocess_mode.BOTH:
