@@ -40,11 +40,11 @@ class RdlProperty(object):
             self.types = set(types)
 
         if isinstance(comps, RdlComponent):
-            self.comp = set((comps,))
+            self.components = set((comps,))
         else:
             for t in comps:
                 assert isinstance(t, RdlComponent)
-            self.comps = set(comps)
+            self.components = set(comps)
 
         self.impl = impl
 
@@ -143,7 +143,7 @@ def _gen_props():
         RdlProperty('saturate',         (n, SS, SD),    f, False),
         RdlProperty('shared',           b,              r),
         RdlProperty('sharedextbus',     b,              (R, A)),
-        RdlProperty('signalwidth',     n,              S),
+        RdlProperty('signalwidth',      n,              S),
         RdlProperty('singlepulse',      b,              f),
         RdlProperty('sticky',           b,              f),
         RdlProperty('stickybit',        b,              f),
@@ -152,14 +152,14 @@ def _gen_props():
         RdlProperty('swmod',            (b, SS),        f),
         RdlProperty('swwe',             (b, SS, SD),    f),
         RdlProperty('swwel',            (b, SS, SD),    f),
-        RdlProperty('sync',              b,             S),
-        RdlProperty('threshold',         (n, SS),       f, False),
-        RdlProperty('underflow',         SS,            f, False),
-        RdlProperty('we',                (b, SS, SD),   f),
-        RdlProperty('wel',               (b, SS, SD),   f),
-        RdlProperty('woclr',             b,             f),
-        RdlProperty('woset',             b,             f),
-        RdlProperty('xored',             (b, SS),       f),
+        RdlProperty('sync',             b,              S),
+        RdlProperty('threshold',        (n, SS),        f, False),
+        RdlProperty('underflow',        SS,             f, False),
+        RdlProperty('we',               (b, SS, SD),    f),
+        RdlProperty('wel',              (b, SS, SD),    f),
+        RdlProperty('woclr',            b,              f),
+        RdlProperty('woset',            b,              f),
+        RdlProperty('xored',            (b, SS),        f),
     ]
 
 

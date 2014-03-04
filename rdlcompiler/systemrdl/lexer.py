@@ -54,7 +54,7 @@ def _make_lexer():
     keywords.update({prop.name: 'PROPNAME' for prop in properties if prop.name not in keywords})
 
     tokens = ['VNUM', 'NUM', 'STRING', 'ID', 'DEREF', 'INC', 'MOD', 'LSQ', 'RSQ', 'RBRACE', 'LBRACE',
-              'LPAREN', 'RPAREN', 'COLON', 'COMMA', 'DOT', 'OR', 'AT', 'SEMI', 'EQ']
+              'COLON', 'COMMA', 'DOT', 'OR', 'AT', 'SEMI', 'EQ']
     tokens += list(OrderedDict.fromkeys(keywords.values()))
 
 
@@ -66,7 +66,7 @@ def _make_lexer():
         t.lexer.filename = path[1:-1]  # Remove quotes
         # Suppress the token, no return
 
-    VNUM = '(\\d+)\'([bdh])([0-9a-fA-F]+)'
+    VNUM = '(\\d+)\'([bdh])([0-9a-fA-F_]+)'
     VNUM_RE = re.compile(VNUM)
 
     @lex.TOKEN(VNUM)
@@ -75,7 +75,7 @@ def _make_lexer():
         width = int(width)
 
         try:
-            value = int(digits, {'b': 2, 'd': 10, 'h': 16}[radix])
+            value = int(digits.replace('_', ''), {'b': 2, 'd': 10, 'h': 16}[radix])
 
             t.value = (width, value)
             return t
@@ -84,9 +84,9 @@ def _make_lexer():
             print("Error:%s: Illegal verilog-style literal '%s' has invalid digits for radix '%s'" %
                   (token_loc(t), t.value, radix))
 
-    @lex.TOKEN(r'\d+|0x[0-9a-fA-F]+')
+    @lex.TOKEN(r'0x[0-9a-fA-F]+|\d+')
     def t_NUM(t):
-        t.value = int(t.value)
+        t.value = int(t.value, base=0)
         return t
 
     @lex.TOKEN(STRING)
@@ -108,21 +108,21 @@ def _make_lexer():
         t.type = keywords.get(t.value, 'ID')    # Check for reserved words
         return t
 
-    @lex.TOKEN(r'\s+')
-    def t_ws(t):
-        pass
+    @lex.TOKEN(r'/\*(.|\n)*?\*/')
+    def t_mlcomment(t):
+        t.lexer.lineno += t.value.count('\n')
+
+    @lex.TOKEN(r'//[^\n]*\n')
+    def t_slcomment(t):
+        t.lexer.lineno += 1
 
     @lex.TOKEN(r'\n')
     def t_newline(t):
         t.lexer.lineno += 1
 
-    @lex.TOKEN(r'/\*(.|\n)*?\*/')
-    def t_mlcomment(t):
-        t.lexer.lineno += t.value.count('\n')
-
-    @lex.TOKEN('//[^\n]*\n')
-    def t_slcomment(t):
-        t.lexer.lineno += 1
+    @lex.TOKEN(r'\s+')
+    def t_ws(t):
+        pass
 
     def t_error(t):
         print("Warning:%s: Illegal character '%s'." % (token_loc(t), t.value))
@@ -133,9 +133,6 @@ def _make_lexer():
     t_RBRACE = r'}'
     t_LSQ = r'\['
     t_RSQ = r'\]'
-
-    t_LPAREN = r'\('
-    t_RPAREN = r'\)'
 
     t_AT = r'@'
     t_OR = r'\|'
@@ -153,13 +150,15 @@ def _make_lexer():
     # Compute column.
     #     input is the input text string
     #     token is a token instance
-    def _find_column(self, t):
+    #@staticmethod
+    def _find_column(t):
         last_cr = t.lexer.lexdata.rfind('\n', 0, t.lexpos)
         if last_cr < 0:
             last_cr = 0
         column = (t.lexpos - last_cr) + 1
         return column
 
+    #@staticmethod
     def token_loc(t):
         return '%s:%d:%d' % (t.lexer.filename, t.lexer.lineno, _find_column(t))
 
@@ -171,12 +170,14 @@ class RdlToken(object):
         self.value = value
         self.location = location
 
+    def __repr__(self):
+        return "RdlToken('%s')" % str(self.value)
+
 
 class RdlLexer(object):
 
     def __init__(self):
         self.tokens,self._lexer = _make_lexer()
-
 
     def input(self, data, filename='<string>'):
         self._lexer.filename = filename

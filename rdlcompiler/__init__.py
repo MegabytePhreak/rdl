@@ -3,6 +3,7 @@ __author__ = 'MegabytePhreak'
 
 import argparse
 from .systemrdl.preprocessor import preprocess_mode, preprocess
+from .systemrdl.parser import RdlParser
 import re
 from .config import Config
 
@@ -69,10 +70,6 @@ def main():
     for override in args.overrides:
         Config.cfg().set(override[0], override[1], override[2])
 
-    print args
-
-    print Config.cfg()._sections
-
     contents = preprocess(args.inputs, preprocessor_mode_map[args.preprocessor])
 
     if args.preprocess_only:
@@ -81,6 +78,13 @@ def main():
         else:
             open(args.output, 'wb').write(contents)
         exit(0)
+
+    p = RdlParser()
+
+    ast = p.parse(contents)
+
+    for node in ast:
+        print node
 
 if __name__ == '__main__':
     main()

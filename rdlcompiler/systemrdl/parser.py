@@ -15,10 +15,9 @@ def _make_parser(tokens, *args, **kwargs):
             if len(p) == 3:
                 p[0] = p[1] + [p[2]]
             else:
-                p[0] = [p[1]]
+                p[0] = []
 
-        rule.__doc__ = "{0} : {0} {1} \n | {1}".format(prod, tprod)
-        print rule.__doc__
+        rule.__doc__ = "{0} : {0} {1} \n |".format(prod, tprod)
         return rule
 
     def make_oneof_prod(prod, prods):
@@ -29,7 +28,6 @@ def _make_parser(tokens, *args, **kwargs):
         lines = ['%s : %s' % (prod, prods[0])]
         lines += prods[1:]
         rule.__doc__ = '\n| '.join(lines)
-        print rule.__doc__
         return rule
 
     def error(tok, text, *args):
@@ -40,9 +38,104 @@ def _make_parser(tokens, *args, **kwargs):
 
     p_root = make_list_prod('root', 'elem')
 
-    p_elem = make_oneof_prod('elem', ['enum_def',  # 'comp_def',
-                                      #'anon_comp_inst', 'comp_inst',
+    p_elem = make_oneof_prod('elem', ['enum_def',   'comp_def',
+                                      'anon_comp_inst', 'comp_inst',
                                       'default_prop_assign', 'prop_assign', 'dynamic_prop_assign'])
+
+    def p_comp_def(p):
+        """ comp_def : COMPTYPE ID LBRACE comp_body RBRACE SEMI
+        """
+        p[0] = ast.CompDef(p[1].value, p[2].value, p[4])
+
+    def p_anon_comp_inst(p):
+        """ anon_comp_inst : int_ext COMPTYPE LBRACE comp_body RBRACE comp_inst_elems SEMI
+                           | COMPTYPE LBRACE comp_body RBRACE comp_inst_elems SEMI
+        """
+        if len(p) > 7:
+            p[0] = ast.AnonCompInst(p[2].value, p[4], p[6], p[1])
+        else:
+            p[0] = ast.AnonCompInst(p[1].value, p[3], p[5], None)
+
+    def p_comp_inst(p):
+        """ comp_inst : int_ext ID  comp_inst_elems SEMI
+                      | ID  comp_inst_elems SEMI
+        """
+        intext = None
+        if len(p) > 4:
+            p[0] = ast.CompInst(p[2].value, p[3], p[1])
+        else:
+            p[0] = ast.CompInst(p[1].value, p[2])
+
+
+    def p_int_ext(p):
+        """ int_ext : INTEXT
+        """
+        p[0] = p[1].value
+
+    p_comp_body = make_list_prod('comp_body', 'comp_elem')
+    p_comp_elem = make_oneof_prod('comp_elem', ['enum_def',  'comp_def',
+                                  'anon_comp_inst', 'comp_inst',
+                                  'default_prop_assign', 'prop_assign', 'dynamic_prop_assign'])
+
+    def p_comp_inst_elems(p):
+        """ comp_inst_elems : comp_inst_elems COMMA comp_inst_elem
+                            | comp_inst_elem
+        """
+        if len(p) > 2:
+            p[0] = p[1] + [p[3]]
+        else:
+            p[0] = [p[1]]
+
+    def p_comp_inst_elem(p):
+        """ comp_inst_elem : ID array_decl reset_value addr_alloc
+        """
+        p[0] = ast.InstParams(p[1].value, p[2], p[3], p[4])
+
+    def p_array_decl(p):
+        """ array_decl : LSQ numeric RSQ
+                       | LSQ numeric COLON numeric RSQ
+                       |
+        """
+        if len(p) == 4:
+            p[0] = p[2]
+        elif len(p) == 6:
+            p[0] = (p[2], p[4])
+        else:
+            p[0] = None
+
+    def p_reset_value(p):
+        """ reset_value : EQ sized_numeric
+                        |
+        """
+        if len(p) > 1:
+            p[0] = p[2]
+        else:
+            p[0] = None
+
+
+    def p_addr_alloc(p):
+        """ addr_alloc : alloc_pos alloc_inc
+        """
+        p[0] = (p[1], p[2])
+
+    def p_alloc_pos(p):
+        """ alloc_pos : AT numeric
+                      | MOD numeric
+                      |
+        """
+        if len(p) > 1:
+            p[0] = (p[1].value, p[2])
+        else:
+            p[0] = None
+
+    def p_alloc_inc(p):
+        """ alloc_inc : INC numeric
+                      |
+        """
+        if len(p) > 1:
+            p[0] = p[2]
+        else:
+            p[0] = None
 
     def p_propname(p):
         """ propname : PROPNAME
@@ -55,7 +148,7 @@ def _make_parser(tokens, *args, **kwargs):
         """ default_prop_assign : DEFAULT prop_assign
         """
         p[2].set_default = True
-        p[0] = p[1]
+        p[0] = p[2]
 
     def p_prop_assign_0(p):
         """ prop_assign : propname maybe_value SEMI
@@ -67,10 +160,10 @@ def _make_parser(tokens, *args, **kwargs):
                         | INTRMOD propname maybe_value SEMI
                         | NONSTICKY propname maybe_value SEMI
         """
-        if len(p) == 5:
-            p[0] = ast.IntrPropAssign(p[3], p[4], (p[1], p[2]))
+        if len(p) == 6:
+            p[0] = ast.IntrPropAssign(p[3], p[4], (p[1].value, p[2].value))
         else:
-            p[0] = ast.IntrPropAssign(p[2], p[3], (p[1]))
+            p[0] = ast.IntrPropAssign(p[2], p[3], (p[1].value,))
 
     def p_dynamic_prop_assign(p):
         """ dynamic_prop_assign :  instance_ref maybe_value SEMI
@@ -110,29 +203,28 @@ def _make_parser(tokens, *args, **kwargs):
         """ instance_ref : instance_ref_path
                          | instance_ref_path DEREF propname
         """
-        p[0] = ast.InstanceRef([p[1].value])
+        p[0] = ast.InstanceRef(p[1])
 
         if len(p) > 2:
-            p[0].set_deref(p[3])
+            p[0].set_prop(p[3])
 
     def p_instance_ref_path(p):
         """ instance_ref_path : instance_ref_elem
                               | instance_ref_path DOT instance_ref_elem
         """
         if len(p) == 2:
-            p[0] = ast.InstanceRef([p[1].value])
+            p[0] = [p[1]]
         else:
-            p[1].add_child_ref(p[3].value)
-            p[0] = p[1]
+            p[0] = p[1] + [p[3]]
 
     def p_instance_ref_elem(p):
         """ instance_ref_elem : ID
-                              | ID LSQ numeric RSQ  DOT
+                              | ID LSQ numeric RSQ
         """
         if len(p) == 2:
             p[0] = p[1].value
         else:
-            p[0] = ast.Subscript(p[1].value, p[2])
+            p[0] = ast.Subscript(p[1].value, p[3])
 
     def p_literal_1(p):
         """ literal : STRING
