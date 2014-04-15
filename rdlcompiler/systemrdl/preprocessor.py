@@ -89,6 +89,6 @@ def preprocess(filenames, mode=preprocess_mode.AUTO):
             return verilog_preprocess(filenames)
     finally:
         if tempname is not None:
-            os.remove(tempname)
+           pass # os.remove(tempname)
 
     return concatenate_files(filenames)

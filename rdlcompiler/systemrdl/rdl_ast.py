@@ -60,7 +60,6 @@ class EnumEncoding(AstNode):
 
         return ''.join(strs)
 
-
 class PropAssign(AstNode):
     def __init__(self, name, value, set_default=False):
         self.name = name

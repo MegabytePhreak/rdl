@@ -3,10 +3,12 @@ __author__ = 'MegabytePhreak'
 
 import argparse
 from .systemrdl.preprocessor import preprocess_mode, preprocess
-from .systemrdl.parser import RdlParser
+from .systemrdl.rdl_parser import RdlParser
 import re
 from .config import Config
 
+import colorize
+from logger import logger
 
 preprocessor_mode_map = {
     'auto': preprocess_mode.AUTO,
@@ -31,6 +33,10 @@ def parse_args():
                               help="Output filename or prefix")
     compile_opts.add_argument('-p', '--preprocessor', choices=preprocessor_mode_map, action='store', default='auto',
                               help="Type of preprocessing to perform, default='auto'")
+    compile_opts.add_argument('-D', '--debug', action='store_true', dest='debug',
+                              help="Print parser debugging info")
+    compile_opts.add_argument('--no-color', action='store_false', dest='colorize',
+                              help="Disable colorized error messages")
 
     conf = parser.add_argument_group('Configuration Options')
     conf.add_argument('--no-system-config', action='store_false', dest='load_system_config',
@@ -59,6 +65,8 @@ def main():
     Config.create()
     args = parse_args()
 
+    colorize.init(args.colorize, logger.get_dest())
+
     if args.load_system_config:
         Config.cfg().read(Config.SYSTEM_CONFIG_PATH)
     if args.load_user_config:
@@ -80,6 +88,7 @@ def main():
         exit(0)
 
     p = RdlParser()
+    p.debug = args.debug
 
     ast = p.parse(contents)
 
