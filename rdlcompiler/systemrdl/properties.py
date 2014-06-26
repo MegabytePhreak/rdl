@@ -20,12 +20,12 @@ class RdlType(Enum):
 
 @unique
 class RdlComponent(Enum):
-    Field = 'f'
-    Register = 'r'
-    RegisterFile = 'R'
-    AddressMap = 'A'
-    Signal = 'S'
-    Enum = 'e'
+    Field = 'field'
+    Register = 'reg'
+    RegisterFile = 'regfile'
+    AddressMap = 'addrmap'
+    Signal = 'signal'
+    Enum = 'enum'
 
 
 class RdlProperty(object):
@@ -71,7 +71,7 @@ def _gen_props():
     S = RdlComponent.Signal
     e = RdlComponent.Enum
 
-    return [
+    props = [
         RdlProperty('accesswidth',      n,              R),
         RdlProperty('activehigh',       b,              S),
         RdlProperty('activelow',        b,              S),
@@ -161,6 +161,11 @@ def _gen_props():
         RdlProperty('woset',            b,              f),
         RdlProperty('xored',            (b, SS),        f),
     ]
+
+    propdict = {}
+    for prop in props:
+        propdict[prop.name] = prop
+    return propdict
 
 
 properties = _gen_props()

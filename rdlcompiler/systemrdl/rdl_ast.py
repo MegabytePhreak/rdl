@@ -10,7 +10,9 @@ def _indent(level):
 
 
 class AstNode(object):
-    pass
+
+    def __init__(self):
+        self.span = (-1, 0)
 
     def pprint(self, level=0):
         pass
@@ -39,6 +41,8 @@ class EnumDef(AstNode):
             strs += [_indent(level+2), '%s,\n' % encoding.pprint(abs(level)+2)]
         strs += _indent(level+1) + '])'
 
+        strs += 'span%s' % repr(self.span)
+
         return ''.join(strs)
 
 
@@ -57,6 +61,8 @@ class EnumEncoding(AstNode):
             strs += _indent(level+1) + '])'
         else:
             strs += '])'
+
+        strs += 'span%s' % repr(self.span)
 
         return ''.join(strs)
 
@@ -92,7 +98,7 @@ class IntrPropAssign(AstNode):
 
 
 class InstanceRef(AstNode):
-    def __init__(self, path, prop = None):
+    def __init__(self, path, prop=None):
         self.path = path
         self.prop = prop
 
@@ -111,7 +117,7 @@ class InstanceRef(AstNode):
                 strs += ["'%s', " % elem]
 
         strs[-1] = strs[-1][:-2]
-        strs += ['],']
+        strs += [']']
 
         if self.prop is not None:
             strs += ", '%s')" % self.prop

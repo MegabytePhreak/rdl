@@ -4,6 +4,7 @@ __author__ = 'MegabytePhreak'
 import argparse
 from .systemrdl.preprocessor import preprocess_mode, preprocess
 from .systemrdl.rdl_parser import RdlParser
+from .systemrdl.rdl_db import RdlDbBuilder
 import re
 from .config import Config
 
@@ -87,13 +88,14 @@ def main():
             open(args.output, 'wb').write(contents)
         exit(0)
 
-    p = RdlParser()
-    p.debug = args.debug
+    #p = RdlParser()
+    #p.debug = args.debug
 
-    ast = p.parse(contents)
+    #ast = p.parse(contents)
 
-    for node in ast:
-        print node
+    ##    print node
+    p = RdlDbBuilder()
+    p.build_db(contents)
 
 if __name__ == '__main__':
     main()

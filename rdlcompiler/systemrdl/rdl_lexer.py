@@ -8,6 +8,7 @@ from collections import OrderedDict, namedtuple
 from properties import properties
 from rdlcompiler.colorize import colorize, RED, BOLD
 from rdlcompiler.logger import logger
+from bisect import bisect_right
 
 Location = namedtuple('Location', ['filename', 'lineno', 'index'])
 
@@ -70,6 +71,8 @@ class RdlLexer(object):
         (directive, lineno, path, level) = t.value.split()
         t.lexer.lineno = int(lineno)
         t.lexer.filename = path[1:-1]  # Remove quotes
+        self.newlines.append((t.lexer.lexpos, t.lexer.lineno))
+        self.filestarts.append((t.lexer.lexpos, t.lexer.filename))
         # Suppress the token, no return
 
     VNUM = '(\\d+)\'([bdh])([0-9a-fA-F_]+)'
@@ -117,14 +120,17 @@ class RdlLexer(object):
     @lex.TOKEN(r'/\*(.|\n)*?\*/')
     def t_mlcomment(self, t):
         t.lexer.lineno += t.value.count('\n')
+        self.newlines.append((t.lexer.lexpos, t.lexer.lineno))
 
     @lex.TOKEN(r'//[^\n]*\n')
     def t_slcomment(self, t):
         t.lexer.lineno += 1
+        self.newlines.append((t.lexer.lexpos, t.lexer.lineno))
 
     @lex.TOKEN(r'\n')
     def t_newline(self, t):
         t.lexer.lineno += 1
+        self.newlines.append((t.lexer.lexpos, t.lexer.lineno))
 
     @lex.TOKEN(r'[ \t]+')
     def t_ws(self, t):
@@ -154,8 +160,8 @@ class RdlLexer(object):
 
     def prefix_message(self, message, filename=None, lineno=None, token=None ):
         if token is not None:
-            lineno = token.location.lineno
-            filename = token.location.filename
+            lineno = self.token_to_lineno(token)
+            filename = self.token_to_filename(token)
 
         if filename is None:
             filename = '<string>'
@@ -190,18 +196,12 @@ class RdlLexer(object):
             self.format_line(token=token)
         ))
 
-    def token_to_column(self, token):
-        return self.index_to_column(token.location.index)
-
     def index_to_column(self, index):
         last_newline = self.data.rfind('\n', 0, index)
 
         column = (index - last_newline)
 
         return column
-
-    def token_to_line(self, token):
-        return self.index_to_line(token.location.index)
 
     def index_to_line(self, index):
         line_start = self.data.rfind('\n', 0, index) + 1
@@ -213,10 +213,48 @@ class RdlLexer(object):
 
         return self.data[line_start:line_end]
 
+    def index_to_lineno(self, index):
+        indices = [nl[0] for nl in self.newlines]
+        i = bisect_right(indices, index)
+        if i:
+            return self.newlines[i-1][1]
+        else:
+            raise ValueError
+
+    def index_to_filename(self, index):
+        indices = [fs[0] for fs in self.filestarts]
+        i = bisect_right(indices, index)
+        if i:
+            return self.filestarts[i-1][1]
+        else:
+            raise ValueError
+
+    def token_to_index(self, token):
+        return token.location.index
+
+    def token_to_column(self, token):
+        return self.index_to_column(self.token_to_index(token))
+
+    def token_to_line(self, token):
+        return self.index_to_line(self.token_to_index(token))
+
+    def token_to_lineno(self, token):
+        return self.index_to_lineno(self.token_to_index(token))
+
+    def token_to_filename(self, token):
+        return self.index_to_filename(self.token_to_index(token))
+
+
+
     def input(self, data, filename='<string>'):
         self._lexer.filename = filename
         self._lexer.lineno = 1
         self.data = data
+
+
+        self.newlines = [(0, 1)]
+        self.filestarts = [(0, filename)]
+
 
         return self._lexer.input(data)
 
@@ -232,7 +270,7 @@ class RdlLexer(object):
 
     def __init__(self):
         # hw and sw are properties, but they are lexed as a precedence
-        self.keywords.update({prop.name: 'PROPNAME' for prop in properties if prop.name not in self.keywords})
+        self.keywords.update({name: 'PROPNAME' for name in properties.iterkeys() if name not in self.keywords})
 
         self.tokens = ['VNUM', 'NUM', 'STRING', 'ID', 'DEREF', 'INC', 'MOD', 'LSQ', 'RSQ', 'RBRACE', 'LBRACE',
                        'COLON', 'COMMA', 'DOT',
@@ -243,6 +281,12 @@ class RdlLexer(object):
         self._lexer = lex.lex(object=self)
         self.lex_errors = 0
         self.data = None
+        self.lineno = self._lexer.lineno
+        self.lexpos = self._lexer.lexpos
+
+        self.newlines = []
+        self.filestarts = []
+
 
 if __name__ == "__main__":
     lex.runmain(RdlLexer())

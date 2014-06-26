@@ -45,6 +45,8 @@ class RdlParser(RdlLexer):
             """ comp_def : COMPTYPE id LBRACE comp_body RBRACE SEMI
             """
             p[0] = rdl_ast.CompDef(p[1].value, p[2].value, p[4])
+            p[0].span = (p[1].location.index, p[6].location.index - p[1].location.index)
+
 
     def p_anon_comp_inst(self, p):
         """ anon_comp_inst : int_ext COMPTYPE LBRACE comp_body RBRACE comp_inst_elems SEMI
@@ -155,6 +157,7 @@ class RdlParser(RdlLexer):
         """
         p[0] = p[1].value
 
+
     def p_default_prop_assign(self, p):
         """ default_prop_assign : DEFAULT prop_assign
         """
@@ -165,8 +168,9 @@ class RdlParser(RdlLexer):
         """ prop_assign : propname maybe_value SEMI
         """
         p[0] = rdl_ast.PropAssign(p[1], p[2])
+        p[0].span = (p.lexspan(1)[0], p[3].location.index - p.lexspan(1)[0])
 
-    def p_pop_assign_1(self, p):
+    def p_prop_assign_1(self, p):
         """ prop_assign : NONSTICKY INTRMOD propname maybe_value SEMI
                         | INTRMOD propname maybe_value SEMI
                         | NONSTICKY propname maybe_value SEMI
@@ -194,6 +198,7 @@ class RdlParser(RdlLexer):
         """ enum_def : ENUM ID LBRACE enum_body RBRACE SEMI
         """
         p[0] = rdl_ast.EnumDef(p[2].value, p[4])
+        p[0].span = (p[1].location.index, p[6].location.index - p[1].location.index)
 
     p_enum_body = make_list_prod('enum_body', 'encoding')
 
@@ -203,8 +208,10 @@ class RdlParser(RdlLexer):
         """
         if len(p) == 5:
             p[0] = rdl_ast.EnumEncoding(p[1].value, p[3], [])
+            p[0].span = (p[1].location.index, p[4].location.index - p[1].location.index)
         else:
             p[0] = rdl_ast.EnumEncoding(p[1].value, p[3], p[5])
+            p[0].span = (p[1].location.index, p[7].location.index - p[1].location.index)
 
     p_enum_props = make_list_prod('enum_props', 'prop_assign')
 
@@ -334,13 +341,14 @@ class RdlParser(RdlLexer):
 
             logger.log_line(self.format_line_message(token, colorize(RED, "Error: ") + message))
         else:
-            logger.log_line("Error: " + message)
+            logger.log_line(colorize(RED, "Error: ") + message)
 
         self.syntax_errors += 1
 
     def __init__(self, debug=False):
         RdlLexer.__init__(self)
         self.syntax_errors = 0
+        self.debug = False
 
         self._parser = yacc.yacc(module=self,
                                  debug=debug,
@@ -351,4 +359,4 @@ class RdlParser(RdlLexer):
 
     def parse(self, string):
         string = string.expandtabs(4)
-        return self._parser.parse(string, lexer=self, debug=self.debug)
+        return self._parser.parse(string, lexer=self, debug=self.debug, tracking=True)
