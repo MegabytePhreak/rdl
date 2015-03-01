@@ -1,6 +1,5 @@
 __author__ = 'MegabytePhreak'
 
-
 import argparse
 from .systemrdl.preprocessor import preprocess_mode, preprocess
 from .systemrdl.rdl_parser import RdlParser
@@ -8,10 +7,10 @@ from .systemrdl.rdl_db import RdlDbBuilder
 import re
 from .config import Config
 
-import colorize
-from logger import logger
+import rdlcompiler.colorize
+from rdlcompiler.logger import logger
 
-preprocessor_mode_map = {
+PREPROCESSOR_MODE_MAP = {
     'auto': preprocess_mode.AUTO,
     'none': preprocess_mode.NONE,
     'perlpp': preprocess_mode.PERL_ONLY,
@@ -24,15 +23,17 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('inputs', nargs='+', action='store',
                         help=
-                        """Files to process. The contents of the files will be concatenated before any
-                         preprocessing.""")
+                        """Files to process. The contents of the files
+                        will be concatenated before any preprocessing.""")
 
     compile_opts = parser.add_argument_group('Compiler Options')
-    compile_opts.add_argument('-E', '--preprocess-only', action='store_true', dest='preprocess_only',
-                              help="Only preprocess the input files, do not compile them and produce outputs")
+    compile_opts.add_argument('-E', '--preprocess-only', action='store_true',
+                              dest='preprocess_only', help=
+                              """Only preprocess the input files, do not
+                              compile them and produce outputs""")
     compile_opts.add_argument('-o', '--output', action='store', dest='output',
                               help="Output filename or prefix")
-    compile_opts.add_argument('-p', '--preprocessor', choices=preprocessor_mode_map, action='store', default='auto',
+    compile_opts.add_argument('-p', '--preprocessor', choices=PREPROCESSOR_MODE_MAP, action='store', default='auto',
                               help="Type of preprocessing to perform, default='auto'")
     compile_opts.add_argument('-D', '--debug', action='store_true', dest='debug',
                               help="Print parser debugging info")
@@ -41,15 +42,15 @@ def parse_args():
 
     conf = parser.add_argument_group('Configuration Options')
     conf.add_argument('--no-system-config', action='store_false', dest='load_system_config',
-                        help="Don't load the system-level configuration file: '%s'" % Config.SYSTEM_CONFIG_PATH)
+                      help="Don't load the system-level configuration file: '%s'" % Config.SYSTEM_CONFIG_PATH)
     conf.add_argument('--no-user-config', action='store_false', dest='load_user_config',
-                       help="Don't load the user-level configuration file: '%s'" % Config.USER_CONFIG_PATH)
+                      help="Don't load the user-level configuration file: '%s'" % Config.USER_CONFIG_PATH)
     conf.add_argument('-C', '--config', action='append', dest='config_files', type=argparse.FileType('rb'),
-                        metavar='CONFIG_FILE', default=[],
-                        help="Load extra configuration file")
+                      metavar='CONFIG_FILE', default=[],
+                      help="Load extra configuration file")
     conf.add_argument('-O', '--override', action='append', dest='overrides', type=parse_override,
-                        metavar='SECTION.OPTION=VALUE', default=[],
-                        help="Override loaded configuration settings with specified value")
+                      metavar='SECTION.OPTION=VALUE', default=[],
+                      help="Override loaded configuration settings with specified value")
 
     return parser.parse_args()
 
@@ -79,7 +80,7 @@ def main():
     for override in args.overrides:
         Config.cfg().set(override[0], override[1], override[2])
 
-    contents = preprocess(args.inputs, preprocessor_mode_map[args.preprocessor])
+    contents = preprocess(args.inputs, PREPROCESSOR_MODE_MAP[args.preprocessor])
 
     if args.preprocess_only:
         if args.output is None:
@@ -88,14 +89,15 @@ def main():
             open(args.output, 'wb').write(contents)
         exit(0)
 
-    #p = RdlParser()
-    #p.debug = args.debug
+    # p = RdlParser()
+    # p.debug = args.debug
 
     #ast = p.parse(contents)
 
     ##    print node
     p = RdlDbBuilder()
     p.build_db(contents)
+
 
 if __name__ == '__main__':
     main()

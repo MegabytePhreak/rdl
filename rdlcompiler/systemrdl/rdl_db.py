@@ -31,6 +31,11 @@ class RdlDbBuilder(RdlParser):
 
         instances = self.process_scope('<root>', ast, is_root=True)
 
+    def gen_anon_name(self):
+        name = "@anon%d" % self.anon_counter
+        self.anon_counter += 1
+        return name
+
     def process_scope(self, name, items, is_root = False ):
 
         instances = InstanceScope()
@@ -76,8 +81,7 @@ class RdlDbBuilder(RdlParser):
     def process_compdef(self, node, anonymous=False):
 
         if anonymous:
-            node.name = '@anon%d' % self.anon_counter
-            self.anon_counter += 1
+            node.name = self.gen_anon_name()
 
         if node.type == 'field':
             print "Skipping field '%s'" % node.name
@@ -207,9 +211,6 @@ class RdlDbBuilder(RdlParser):
 
     def instantiate_component(self, definition, instparams):
         comp = copy.copy(definition)
-
-
-
 
     def db_error(self, message, node=None):
 
